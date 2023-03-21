@@ -204,15 +204,19 @@ def limiti(instr_id: int, limit_val: float):
     check_error(err)
 
 
-def lorangev(instr_id: int, v_range: float):
+def lorangev(instr_id: int, range: float):
     """define the bottom voltage autorange limit"""
-    err = _dll.lorangev(c.c_int32(instr_id), c.c_double(v_range))
+    # Argument 'range' shadows the built-in function 'range' which is ok
+    # here as no further processing is done within the local scope of the function
+    err = _dll.lorangev(c.c_int32(instr_id), c.c_double(range))
     check_error(err)
 
 
-def lorangei(instr_id: int, i_range: float):
+def lorangei(instr_id: int, range: float):
     """define the bottom current autorange limit"""
-    err = _dll.lorangei(c.c_int32(instr_id), c.c_double(i_range))
+    # Argument 'range' shadows the built-in function 'range' which is ok
+    # here as no further processing is done within the local scope of the function
+    err = _dll.lorangei(c.c_int32(instr_id), c.c_double(range))
     check_error(err)
 
 
