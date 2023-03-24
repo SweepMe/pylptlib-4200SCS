@@ -17,12 +17,14 @@ as the lptlib.dll is 32 bit only.
 
 ### Example
 
+``` python
     from pylptlib import lpt, param
     
     lpt.initialize()  # needed to load the dll
     lpt.devint()
     instr_id = lpt.getinstid("PMU1")
     lpt.rpm_config(instr_id, 1, param.KI_RPM_PATHWAY, param.KI_RPM_PULSE)
+```
 
 ### Function names, arguments and return values
 * All arguments are changed to lower case and have underscores in case an argument contained capital letters:
@@ -33,12 +35,13 @@ as the lptlib.dll is 32 bit only.
 
 * Pointer like arguments are  omitted if they can be automatically created.
 Functions that are used to query values return the values of the buffer objects if possible.
-Otherwise None is returned.
+Otherwise, None is returned.
 
-
+``` python
     # pointer like argument '*result' is not used
     # function returns the current
     current = lpt.intgi(instr_id)
+```
 
 * For exact use of pylptlib, please have a look at the implementation in src\pylptlib\lpt.py
 
