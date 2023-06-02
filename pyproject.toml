@@ -1,6 +1,93 @@
-
 [project]
 name = "pylptlib"
+description = "Package to control the Keithley 4200A-SCS parameter analyzer with Python"
+readme = "README.md"
+requires-python = ">=3.6"
+license = { file = "LICENSE.md" }
+maintainers = [
+    { name = "SweepMe! GmbH", email = "contact@sweep-me.net" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: System :: Hardware :: Hardware Drivers",
+]
+dynamic = ["version"]
 
-[tool.pytest.ini_options]
-pythonpath = "src"
+[project.urls]
+Homepage = "https://sweep-me.net"
+Repository = "https://github.com/SweepMe/pylptlib-4200SCS"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "pylptlib.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+src = ["src", "examples"]
+select = [
+    "F",
+    "E", "W",
+    "C90",
+    "I",
+    "N",
+    "D",
+    "UP",
+    "YTT",
+    "ANN",
+    "ASYNC",
+    "S",
+    "BLE",
+    "B",
+    "A",
+    "COM",
+    "C4",
+    "DTZ",
+    "T10",
+    "EM",
+    "FA",
+    "ISC",
+    "ICN",
+    "G",
+    "INP",
+    "PIE",
+    "T20",
+    "PT",
+    "Q",
+    "RSE",
+    "RET",
+    "SLF",
+    "SIM",
+    "TID",
+    "INT",
+    "ARG",
+    "PTH",
+    "TD",
+    "ERA",
+    "PD",
+    "PL",
+    "TRY",
+    "FLY",
+    "NPY",
+    "RUF",
+]
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.black]
+line-length = 120
+
+[tool.mypy]
+strict = true
+mypy_path = "src,examples"
