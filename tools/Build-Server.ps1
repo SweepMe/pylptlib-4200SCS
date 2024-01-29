@@ -1,3 +1,4 @@
 $MainDir = (Get-Item $PSScriptRoot).parent.FullName
 cd $MainDir
-pyinstaller --paths .\src --onefile .\src\tcp_server\app.py
+pyinstaller --paths .\src --name 4200-Server --onefile .\src\tcp_server\app.py
+Copy-Item .\src\tcp_server\4200-Server.template.ini .\dist\4200-Server.ini
