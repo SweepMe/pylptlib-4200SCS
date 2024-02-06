@@ -1,5 +1,5 @@
 import logging, sys
-from ProxyClass import Proxy
+from tcp_client.ProxyClass import Proxy
 
 logging.basicConfig(stream=sys.stdout)
 # remove for production use:

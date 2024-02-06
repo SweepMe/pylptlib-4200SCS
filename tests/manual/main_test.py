@@ -1,6 +1,6 @@
 import sys
 import logging
-from server import run_server
+from tcp_server.server import run_server
 
 import test_libs.library as lpt
 import test_libs.parameters as param
