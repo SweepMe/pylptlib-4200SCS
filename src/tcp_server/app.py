@@ -50,7 +50,7 @@ try:
                "in the configuration file.")
         raise NotImplementedError(msg)
 
-    run_server(ip, port, served_objects)
+    run_server(served_objects, local_ip=ip, local_port=int(port))
 except Exception:
     traceback.print_exc()
     import msvcrt

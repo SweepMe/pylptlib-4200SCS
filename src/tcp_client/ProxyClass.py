@@ -2,15 +2,10 @@ import json
 import builtins
 import asyncio
 import logging
+import win32pipe
 
-# As SweepMe! 1.5.5 does not come with tblib, we only use it
-# if it is available
-try:
-    from tblib import Traceback
-    tblib_imported = True
-except ModuleNotFoundError:
-    tblib_imported = False
-    
+from tblib import Traceback
+
 from six import reraise
 
 
@@ -33,14 +28,8 @@ class RemoteVar:
 class Proxy:
     _target_class: str
 
-    def __init__(self, address: str, port: int, target_class: str):
-        self.loop = asyncio.new_event_loop()
+    def __init__(self, target_class: str):
         self._target_class = target_class
-        self.address = address
-        self.port = port
-        
-    def __del__(self):
-        self.loop.close()
 
     def _convert_argument_from_json(self, arg):
         if isinstance(arg, list):
@@ -66,21 +55,11 @@ class Proxy:
             "value": arg
         }
 
-    async def _async_send_to_server(self, command: str) -> str:
-        reader, writer = await asyncio.open_connection(
-            self.address, self.port)
-
-        writer.write(command.encode("utf-8") + b'\n')
-        await writer.drain()
-
-        data = await reader.readline()
-
-        writer.close()
-        return data.decode("utf-8")
-
     def _send_to_server(self, command: str) -> str:
-        result = self.loop.run_until_complete(self._async_send_to_server(command))
-        return result
+        return self._send_to_server_binary(command.encode("utf-8")).decode("utf-8")
+
+    def _send_to_server_binary(self, command: bytes) -> bytes:
+        raise NotImplementedError
 
     def unpack_result(self, response):
         result = json.loads(response)
@@ -90,11 +69,8 @@ class Proxy:
         if status == "exception":
             message = result["message"]
             
-             # only used if tblib was imported 
-            if tblib_imported:
-                tb = Traceback.from_dict(result["traceback"]).as_traceback() 
-            else:
-                tb = None
+
+            tb = Traceback.from_dict(result["traceback"]).as_traceback()
 
             reraise(
                 RemoteException,
@@ -136,3 +112,41 @@ class Proxy:
             logger.debug(f"Response: {result}")
             return self._convert_argument_from_json(result_json["return"])
         return None
+
+
+class TCPProxy(Proxy):
+
+    def __init__(self, target_class: str, address: str, port: int):
+        super().__init__(target_class)
+        self.loop = asyncio.new_event_loop()
+        self._target_class = target_class
+        self.address = address
+        self.port = port
+
+    def __del__(self):
+        self.loop.close()
+
+    async def _async_send_to_server(self, command: bytes) -> bytes:
+        reader, writer = await asyncio.open_connection(
+            self.address, self.port)
+
+        writer.write(command + b'\n')
+        await writer.drain()
+
+        data = await reader.readline()
+
+        writer.close()
+        return data
+
+    def _send_to_server_binary(self, command: bytes) -> bytes:
+        return self.loop.run_until_complete(self._async_send_to_server(command))
+
+
+class PipeProxy(Proxy):
+    def __init__(self, target_class: str, pipe_name: str):
+        super().__init__(target_class)
+        self._target_class = target_class
+        self.pipe_name = rf"\\.\PIPE\{pipe_name}"
+
+    def _send_to_server_binary(self, command: bytes) -> bytes:
+        return win32pipe.CallNamedPipe(self.pipe_name, command + b'\n', 2**16, 5000)

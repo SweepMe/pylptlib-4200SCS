@@ -1,12 +1,16 @@
 import logging, sys
-from tcp_client.ProxyClass import Proxy
+from tcp_client.ProxyClass import TCPProxy, PipeProxy
 
 logging.basicConfig(stream=sys.stdout)
 # remove for production use:
 logging.getLogger("TCPClientProxy").setLevel(logging.DEBUG)
 
-t = Proxy("127.0.0.1", 8888, "TargetClass")
-p = Proxy("127.0.0.1", 8888, "Param")
+# t = TCPProxy("TargetClass", "127.0.0.1", 8888)
+# p = TCPProxy("Param", "127.0.0.1", 8888)
+
+t = PipeProxy("TargetClass", "sweepmetestpipe")
+p = PipeProxy("Param", "sweepmetestpipe")
+
 
 t.do_something("wonder")
 

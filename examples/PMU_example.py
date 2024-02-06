@@ -4,10 +4,10 @@ import time
 from pylptlib import lpt, param
 
 # Option2: when script runs on an external measurement computer
-# from ProxyClass import Proxy
+# from ProxyClass import TCPProxy
 # tcp_ip = "192.168.0.4"
-# lpt = Proxy(tcp_ip, 8888, "lpt")
-# param = Proxy(tcp_ip, 8888, "param")
+# lpt = TCPProxy("lpt", tcp_ip, 8888)
+# param = TCPProxy("param", tcp_ip, 8888)
 
 lpt.initialize()
 lpt.tstsel(1)

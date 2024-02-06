@@ -91,6 +91,10 @@ async def handle_request(reader, writer):
 
     try:
         data = await reader.readline()
+        if not data:
+            # for pipes handle_request can get called even on a connect, then the string is empty
+            # and nothing should be done
+            return
         command = data.decode("utf-8")
         result = server.run_command(command)
         result = result.encode("utf-8")
@@ -112,7 +116,7 @@ async def handle_request(reader, writer):
     writer.close()
 
 
-async def main(local_ip: str, local_port: int):
+async def main_tcp(local_ip: str, local_port: int):
     tcp_server = await asyncio.start_server(
         handle_request, local_ip, local_port)
 
@@ -123,9 +127,30 @@ async def main(local_ip: str, local_port: int):
         await tcp_server.serve_forever()
 
 
-def run_server(local_ip: str, local_port: int, served_objects: Dict[str, Any]):
+async def main_pipe(pipe_name):
+    loop = asyncio.get_running_loop()
+
+    def factory():
+        protocol = asyncio.StreamReaderProtocol(asyncio.StreamReader(), handle_request)
+        return protocol
+
+    await loop.start_serving_pipe(factory, rf"\\.\PIPE\{pipe_name}")
+    logging.info(f'Serving on pipe {pipe_name}')
+
+    _serving_forever_fut = loop.create_future()
+    await _serving_forever_fut
+
+
+def run_server(served_objects: Dict[str, Any], *, local_ip: str = "", local_port: int = -1, pipe_name: str = ""):
     global server
     if server is not None:
         raise Exception("The server cannot be run more than once.")
     server = Server(served_objects)
-    asyncio.run(main(local_ip, local_port))
+    if local_ip:
+        coro = main_tcp(local_ip, local_port)
+    elif pipe_name:
+        coro = main_pipe(pipe_name)
+    else:
+        msg = "Did not specify any address on which to listen."
+        raise ValueError(msg)
+    asyncio.run(coro)

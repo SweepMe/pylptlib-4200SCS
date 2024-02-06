@@ -12,4 +12,5 @@ served_objects = {
             "Param": param
         }
 
-run_server("127.0.0.1", 8888, served_objects)
+# run_server(served_objects, local_ip="127.0.0.1", local_port=8888)
+run_server(served_objects, pipe_name="sweepmetestpipe")

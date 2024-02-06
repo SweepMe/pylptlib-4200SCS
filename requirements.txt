@@ -1,2 +1,4 @@
 pyinstaller
+pywin32
+six
 tblib
