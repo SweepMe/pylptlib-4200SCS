@@ -1,15 +1,26 @@
+from __future__ import annotations
+
+import contextlib
 import json
 import builtins
 import asyncio
 import logging
+import subprocess
+import sys
+import time
+
+import pywintypes
+import winerror
+
 import win32pipe
 
+from pathlib import Path
 from tblib import Traceback
 
 from six import reraise
 
 
-logger = logging.getLogger("TCPClientProxy")
+logger = logging.getLogger("ClientProxy")
 
 
 class RemoteException(Exception):
@@ -23,6 +34,97 @@ class RemoteException(Exception):
 class RemoteVar:
     def __init__(self, variable_reference_name):
         self._variable_reference_name = variable_reference_name
+
+
+class RunServer:
+    _instance = None
+    _server_py = None
+    _server_exe = None
+    _process: subprocess.Popen | None = None
+    _references: set[int] = set()
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, caller: object | int, server_exe: Path | None = None, server_py: Path | None = None):
+        self.check_server_path(self._server_exe, server_exe)
+        self.check_server_path(self._server_py, server_py)
+        if server_exe:
+            self._server_exe = server_exe
+        if server_py:
+            self._server_py = server_py
+
+        if not self._process or self._process.poll() is not None:
+            # process was never started or it crashed
+            self.run_server()
+
+        self._references.add(self.get_id(caller))
+
+    def get_id(self, caller: object | int) -> int:
+        if isinstance(caller, object):
+            return id(caller)
+        return caller
+
+    def check_server_path(self, previous: Path | None, new: Path | None):
+        if not previous or not new:
+            return
+        if previous != new:
+            msg = (f"The server has previously been called with path {previous}, but was now called "
+                   f"with path {new}. One module can only manage a single server.")
+            raise ValueError(msg)
+
+    def get_exe_command(self):
+        return [self._server_exe]
+
+    def get_python_interpreter(self) -> Path | None:
+        interpreter = Path(sys.executable)
+        if interpreter.name.lower() == "python.exe":
+            return interpreter
+        return None
+
+    def get_py_command(self):
+        return [self.get_python_interpreter(), str(self._server_py.resolve())]
+
+    def terminate_server(self):
+        if self._process and self._process.poll() is None:
+            try:
+                logger.info("Terminating server")
+                self._references = set()
+                self._process.terminate()
+            except Exception:
+                logger.exception("Failed to terminate running server process. You may need to restart your PC.")
+
+    def run_server(self):
+        self.terminate_server()
+        if self._server_exe and self._server_exe.is_file():
+            cmd = self.get_exe_command()
+            cwd = self._server_exe.parent
+            flags = subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS
+            logger.info("Starting exe server")
+        elif not self.get_python_interpreter():
+            # exe could not be found, and there is no python interpreter to run the py version
+            msg = f"Could not find the server to run, as {self._server_exe} does not exist."
+            raise FileNotFoundError(msg)
+        elif self._server_py and self._server_py.is_file():
+            cmd = self.get_py_command()
+            cwd = self._server_py.parent
+            flags = subprocess.CREATE_NEW_CONSOLE
+            logger.info("Starting py server")
+        else:
+            msg = f"Could not find the server to run, as neither {self._server_exe} nor {self._server_py} exist."
+            raise FileNotFoundError(msg)
+        self._process = subprocess.Popen(cmd, cwd=cwd, creationflags=flags)
+
+    def release(self, caller: object | int):
+        with contextlib.suppress(KeyError):
+            self._references.remove(self.get_id(caller))
+        if not self._references:
+            self.terminate_server()
+
+    def __del__(self):
+        self.terminate_server()
 
 
 class Proxy:
@@ -149,4 +251,15 @@ class PipeProxy(Proxy):
         self.pipe_name = rf"\\.\PIPE\{pipe_name}"
 
     def _send_to_server_binary(self, command: bytes) -> bytes:
-        return win32pipe.CallNamedPipe(self.pipe_name, command + b'\n', 2**16, 5000)
+        delay = 0.03
+        while True:
+            try:
+                result = win32pipe.CallNamedPipe(self.pipe_name, command + b'\n', 2**16, 5000)
+                return result
+            except pywintypes.error as e:
+                if e.winerror != winerror.ERROR_FILE_NOT_FOUND:
+                    raise
+                if delay > 2.0:
+                    raise
+                time.sleep(delay)
+                delay *= 1.5
