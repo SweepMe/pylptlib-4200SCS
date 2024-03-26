@@ -886,3 +886,302 @@ def decode_pulse_status(status_bits: int) -> dict:
     status["Measurement type"] = meas_types[status["Measurement type"]]
 
     return status
+
+
+# ### CVU
+def asweepv(instr_id: str, voltages: list[float], delay: float) -> None:
+    """Generate a waveform based on user-defined forcing array (logarithmic sweep or other custom forcing commands)."""
+    c_instr_id = c.c_int32(instr_id)
+    c_number_of_points = c.c_long(len(voltages))
+    c_voltages = make_double_array_pointer(len(voltages), voltages)
+    c_delay = c.c_double(delay)
+
+    err = _dll.asweepv(c_instr_id, c_number_of_points, c_voltages, c_delay)
+    check_error(err)
+
+
+def bsweepi(instr_id: str, start_current: float, stop_current: float, number_of_points: int, delay: float,
+            result: float) -> None:
+    """Supplies a series of ascending or descending currents and shuts down when result fits a trigger condition."""
+    c_instr_id = c.c_int32(instr_id)
+    c_start_current = c.c_double(start_current)
+    c_stop_current = c.c_double(stop_current)
+    c_number_of_points = c.c_long(number_of_points)
+    c_delay = c.c_double(delay)
+    c_result = c.c_double(result)
+
+    err = _dll.bsweepi(c_instr_id, c_start_current, c_stop_current, c_number_of_points, c_delay, c_result)
+    check_error(err)
+
+
+def bsweepv(instr_id: str, start_current: float, stop_current: float, number_of_points: int, delay: float,
+            result: float) -> None:
+    """Supplies a series of ascending or descending voltage and shuts down when result fits a trigger condition."""
+    c_instr_id = c.c_int32(instr_id)
+    c_start_current = c.c_double(start_current)
+    c_stop_current = c.c_double(stop_current)
+    c_number_of_points = c.c_long(number_of_points)
+    c_delay = c.c_double(delay)
+    c_result = c.c_double(result)
+
+    err = _dll.bsweepv(c_instr_id, c_start_current, c_stop_current, c_number_of_points, c_delay, c_result)
+    check_error(err)
+
+
+def cvu_custom_cable_comp(instr_id: str):
+    """Determine the delays needed to accommodate custom cable lengths"""
+    c_instr_id = c.c_int32(instr_id)
+    err = _dll.cvu_custom_cable_comp(c_instr_id)
+
+    error_codes = {
+        -907: "LPOT/LCUR fail.",
+        -908: "HPOT/HCUR fail",
+    }
+
+    if err in error_codes:
+        raise Exception(error_codes[err])
+
+
+def devclr() -> None:
+    """Set all sources to a zero state."""
+    err = _dll.devlr()
+    check_error(err)
+
+
+def dsweepf(instr_id: str, start_freq: float, stop_freq: float, number_of_points: int, delay: float) -> None:
+    """Perform a dual frequency sweep."""
+    c_instr_id = c.c_int32(instr_id)
+    c_start_freq = c.c_double(start_freq)
+    c_stop_freq = c.c_double(stop_freq)
+    c_number_of_points = c.c_long(number_of_points)
+    c_delay = c.c_double(delay)
+
+    err = _dll.dsweepf(c_instr_id, c_start_freq, c_stop_freq, c_number_of_points, c_delay)
+    check_error(err)
+
+
+def dsweepv(instr_id: str, start_freq: float, stop_freq: float, number_of_points: int, delay: float) -> None:
+    """Perform a dual linear staircase voltage sweep."""
+    c_instr_id = c.c_int32(instr_id)
+    c_start_freq = c.c_double(start_freq)
+    c_stop_freq = c.c_double(stop_freq)
+    c_number_of_points = c.c_long(number_of_points)
+    c_delay = c.c_double(delay)
+
+    err = _dll.dsweepv(c_instr_id, c_start_freq, c_stop_freq, c_number_of_points, c_delay)
+    check_error(err)
+
+
+def measf(instr_id: str) -> float:
+    """Return the frequency sourced during a single measurement."""
+    c_instr_id = c.c_int32(instr_id)
+    meas_result = c.c_double()
+
+    err = _dll.measf(c_instr_id, c.byref(meas_result))
+    check_error(err)
+
+    return float(meas_result.value)
+
+
+def meass(instr_id: str) -> float:
+    """Return the status referenced to a single measurement."""
+    c_instr_id = c.c_int32(instr_id)
+    meas_result = c.c_double()
+
+    err = _dll.measf(c_instr_id, c.byref(meas_result))
+    check_error(err)
+
+    return float(meas_result.value)
+
+
+def measz(instr_id: str, model: str, speed: str) -> (float, float):
+    """Measure impedance."""
+    c_instr_id = c.c_int32(instr_id)
+
+    meas_result1 = c.c_double()
+    meas_result2 = c.c_double()
+
+    # TODO: Implement model and speed
+
+    err = _dll.measz(c_instr_id, c.byref(meas_result1), c.byref(meas_result2))
+    check_error(err)
+
+    return float(meas_result1.value), float(meas_result2.value)
+
+
+def rtfary(number_of_points: int) -> list[float]:
+    """Return array of force values used during sweep."""
+    c_force_values = make_double_array(number_of_points)
+
+    err = _dll.rtfary(c.byref(c_force_values))
+    check_error(err)
+
+    return c_force_values
+
+
+def setfreq(instr_id: str, frequency: float) -> None:
+    """Set the frequency for the ac drive."""
+    c_instr_id = c.c_int32(instr_id)
+    c_frequency = c.c_double(frequency)
+
+    err = _dll.setfreq(c_instr_id, c_frequency)
+    check_error(err)
+
+
+def setlevel(instr_id: str, voltage: float) -> None:
+    """Set the level for the ac drive."""
+    c_instr_id = c.c_int32(instr_id)
+    c_voltage = c.c_double(voltage)
+
+    err = _dll.setlevel(c_instr_id, c_voltage)
+    check_error(err)
+
+
+def smeasf(instr_id: int, array_size: int) -> list[float]:
+    """Return frequencies used for a sweep."""
+    c_instr_id = c.c_int32(instr_id)
+    c_freqs = make_double_array(array_size)
+
+    err = _dll.smeasf(c_instr_id, c.byref(c_freqs))
+    check_error(err)
+
+    # TODO: convert c_frequs to list
+    return c_freqs
+
+
+def smeasfRT(instr_id: int, array_size: int, column_name: str) -> list[float]:
+    """Return sourced frequencies (in real time) for a sweep."""
+    c_instr_id = c.c_int32(instr_id)
+    c_freqs = make_double_array(array_size)
+    c_column_name = make_char_pointer(column_name)
+
+    err = _dll.smeasfRT(c_instr_id, c.byref(c_freqs), c_column_name)
+    check_error(err)
+
+    # TODO: convert c_frequs to list
+    return c_freqs
+
+
+def smeass(instr_id: int, array_size: int) -> list[float]:
+    """Return the measurement status values for every point in a sweep."""
+    c_instr_id = c.c_int32(instr_id)
+    c_status_array = make_double_array(array_size)
+
+    err = _dll.smeass(c_instr_id, c.byref(c_status_array))
+    check_error(err)
+
+    # TODO: Check status codes
+    return c_status_array
+
+
+def smeast(timer_id: str, array_size: int) -> list[float]:
+    """Return timestamps referenced to sweep measurements or a system timer."""
+    c_timer_id = c.c_int32(timer_id)
+    c_timestamps = make_double_array(array_size)
+
+    err = _dll.smeast(c_timer_id, c.byref(c_timestamps))
+    check_error(err)
+
+    return c_timestamps
+
+
+def smeastRT(timer_id: int, array_size: int, column_name: str) -> list[float]:
+    """Return timestamps (in real time) referenced to sweep measurements or a system timer."""
+    c_timer_id = c.c_int32(timer_id)
+    c_timestamps = make_double_array(array_size)
+    c_column_name = make_char_pointer(column_name)
+
+    err = _dll.smeastRT(c_timer_id, c.byref(c_timestamps), c_column_name)
+    check_error(err)
+
+    return c_timestamps
+
+
+def smeasv(instr_id: int, array_size: int) -> list[float]:
+    """Return DC bias voltages used for a sweep."""
+    c_instr_id = c.c_int32(instr_id)
+    c_voltages = make_double_array(array_size)
+
+    err = _dll.smeasv(c_instr_id, c.byref(c_voltages))
+    check_error(err)
+
+    return c_voltages
+
+
+def smeasvRT(instr_id: int, array_size: int, column_name: str) -> list[float]:
+    """Return DC bias voltages (in real time) used for a sweep."""
+    c_instr_id = c.c_int32(instr_id)
+    c_voltages = make_double_array(array_size)
+    c_column_name = make_char_pointer(column_name)
+
+    err = _dll.smeasvRT(c_instr_id, c.byref(c_voltages), c_column_name)
+    check_error(err)
+
+    return c_voltages
+
+
+def smeasz(instr_id: int, model: str, speed: str, array_size: int) -> (list[float], list[float]):
+    """Perform impedance measurements for a sweep."""
+    c_instr_id = c.c_int32(instr_id)
+    meas_result1 = make_double_array(array_size)
+    meas_result2 = make_double_array(array_size)
+
+    # TODO: Implement model and speed
+
+    err = _dll.smeasz(c_instr_id, model, speed, c.byref(meas_result1), c.byref(meas_result2))
+    check_error(err)
+
+    return meas_result1, meas_result2.value
+
+
+def smeaszRT(instr_id: int, model: str, speed: str, number_of_points: int, column_name: str) -> (
+list[float], list[float]):
+    """Perform impedance measurement in real time for a sweep."""
+    c_instr_id = c.c_int32(instr_id)
+    meas_result1 = make_double_array(number_of_points)
+    meas_result2 = make_double_array(number_of_points)
+    c_column_name = make_char_pointer(column_name)
+
+    # TODO: Implement model and speed
+
+    err = _dll.smeasz(c_instr_id, model, speed, c.byref(meas_result1), c.byref(meas_result2), c_column_name)
+    check_error(err)
+
+    return meas_result1, meas_result2.value
+
+
+def sweepf(instr_id: int, start_freq: float, stop_freq: float, number_of_points: int, delay: int) -> None:
+    """Perform a frequency sweep."""
+    c_instr_id = c.c_int32(instr_id)
+    c_start_freq = c.c_double(start_freq)
+    c_stop_freq = c.c_double(stop_freq)
+    c_number_of_points = c.c_long(number_of_points)
+    c_delay = c.c_double(delay)
+
+    err = _dll.sweepf(c_instr_id, c_start_freq, c_stop_freq, c_number_of_points, c_delay)
+    check_error(err)
+
+
+def sweepf_log(instr_id: int, start_freq: float, stop_freq: float, number_of_points: int, delay: int) -> None:
+    """This command performs a logarithmic frequency sweep using a 4215-CVU instrument. This is not available for the
+4210-CVU."""
+    c_instr_id = c.c_int32(instr_id)
+    c_start_freq = c.c_double(start_freq)
+    c_stop_freq = c.c_double(stop_freq)
+    c_number_of_points = c.c_long(number_of_points)
+    c_delay = c.c_double(delay)
+
+    err = _dll.sweepf_log(c_instr_id, c_start_freq, c_stop_freq, c_number_of_points, c_delay)
+    check_error(err)
+
+
+def sweepv(instr_id: int, start_freq: float, stop_freq: float, number_of_points: int, delay: int) -> None:
+    """Perform a linear staircase voltage sweep."""
+    c_instr_id = c.c_int32(instr_id)
+    c_start_freq = c.c_double(start_freq)
+    c_stop_freq = c.c_double(stop_freq)
+    c_number_of_points = c.c_long(number_of_points)
+    c_delay = c.c_double(delay)
+
+    err = _dll.sweepv(c_instr_id, c_start_freq, c_stop_freq, c_number_of_points, c_delay)
+    check_error(err)
