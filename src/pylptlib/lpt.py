@@ -30,6 +30,7 @@ _dll = None
 
 DEBUG_MODE = True
 
+
 # ### UTILITY FUNCTIONS
 
 
@@ -156,7 +157,6 @@ def getinstid(id_string: str):
 
 
 def setmode(instr_id: int, param: int, value):
-
     err = _dll.setmode(c.c_int32(instr_id), c.c_long(param), c.c_double(value))
     check_error(err)
 
@@ -293,7 +293,6 @@ def arb_file(instr_id: int, chan: int, fname: str):
 
 
 def getstatus(instr_id: int, parameter: int):
-
     result = c.c_double()
 
     err = _dll.getstatus(c.c_int32(instr_id), c.c_int32(parameter), c.byref(result))
@@ -489,7 +488,6 @@ def pulse_width(instr_id: int, chan: int, width: float):
 
 def seg_arb_define(instr_id: int, chan: int, nsegments: int, startvals: list, stopvals: list,
                    timevals: list, triggervals: list, output_relay_vals: list):
-
     start_values_p = make_double_array_pointer(startvals)
     stop_values_p = make_double_array_pointer(stopvals)
     time_values_p = make_double_array_pointer(timevals)
@@ -503,7 +501,6 @@ def seg_arb_define(instr_id: int, chan: int, nsegments: int, startvals: list, st
 
 
 def seg_arb_file(instr_id: int, chan: int, fname: str):
-
     fname_c_p = make_char_pointer(fname)
     err = _dll.seg_arb_file(c.c_int32(instr_id), c.c_int32(chan), fname_c_p)
     check_error(err)
@@ -693,13 +690,13 @@ def pulse_meas_rt(instr_id: int, chan: int, v_meas_col_name: str, i_meas_col_nam
 
 
 def pulse_ranges(
-    instr_id: int,
-    chan: int,
-    v_src_range: float,
-    v_range_type: int,
-    v_range: float,
-    i_range_type: int,
-    i_range: float,
+        instr_id: int,
+        chan: int,
+        v_src_range: float,
+        v_range_type: int,
+        v_range: float,
+        i_range_type: int,
+        i_range: float,
 ):
     """set the voltage pulse range and voltage/current measure ranges
     - Range types: Auto 0, Limited auto: 1, Fixed: 2
