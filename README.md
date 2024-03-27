@@ -48,10 +48,25 @@ Otherwise, None is returned.
 * Please have a look at the pdf documentation of the LPT library to understand the meaning of each argument.
 
 ### Remote control
-We have developed a server and client to control the 4200-SCS remotely via Ethernet by utilizing pylptlib.
-The client and server can be used for free in non-commercial institutions.
 
-Please get in contact with us.
+#### Build the server executable
+Create a local development environment. Run following commands in the directory of the repository.
+Adjust the paths to your python installation as necessary, and make sure to use a 32bit python version.
+```powershell
+C:\Python39-32\python.exe -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+```
+
+Build the executable. Run following commands in the directory of the repository.
+```powershell
+.\.venv\Scripts\Activate.ps1
+.\tools\Build-Server.ps1
+```
+
+The server executable can now be found in the `dist` directory. There is also a default config file called
+`4200-Server.ini` that contains the local IP-Address and Port the server is listening at:
+
 
 ## Contact
 Please email us at support@sweep-me.net for any queries. We can also add further functions on request.
