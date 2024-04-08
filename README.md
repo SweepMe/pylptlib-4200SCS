@@ -1,10 +1,10 @@
 ## pylptlib
 
 Package to control the Keithley 4200A-SCS parameter analyzer with Python. 
-It uses the Keithleys Linear Parametric Test Library (LPT) by wrapping the lptlib.dll using 
+It uses Keithleys Linear Parametric Test Library (LPT) by wrapping the lptlib.dll using 
 ctypes. The lptlib.dll is located on the parameter analyzer and will be automatically
 found when running pylptlib on the instrument. The library supports the most common commands
-for SMU and pulse units. CVU cards are not supported, yet.
+for SMU and pulse units as well as commands for CVU cards.
 
 pylptlib is a backend for the [SweepMe!](https://sweep-me.net) instrument drivers for the Keithley 4200-SCS.
 
