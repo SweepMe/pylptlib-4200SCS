@@ -18,6 +18,7 @@
 # SOFTWARE.
 
 from __future__ import annotations
+
 import ctypes as c
 
 from .error_codes import ERROR_CODES
@@ -154,6 +155,13 @@ def getinstid(id_string: str):
 
 def setmode(instr_id: int, param: int, value):
     err = _dll.setmode(c.c_int32(instr_id), c.c_long(param), c.c_double(value))
+    check_error(err)
+
+
+def rdelay(delay: float) -> None:
+    """Set a user-programmable delay."""
+    c_delay = c.c_double(delay)
+    err = _dll.rdelay(c_delay)
     check_error(err)
 
 
@@ -480,14 +488,14 @@ def pulse_width(instr_id: int, chan: int, width: float):
 
 
 def seg_arb_define(
-    instr_id: int,
-    chan: int,
-    nsegments: int,
-    startvals: list,
-    stopvals: list,
-    timevals: list,
-    triggervals: list,
-    output_relay_vals: list,
+        instr_id: int,
+        chan: int,
+        nsegments: int,
+        startvals: list,
+        stopvals: list,
+        timevals: list,
+        triggervals: list,
+        output_relay_vals: list,
 ):
     start_values_p = make_double_array_pointer(startvals)
     stop_values_p = make_double_array_pointer(stopvals)
@@ -625,15 +633,15 @@ def pulse_limits(instr_id: int, chan: int, v_limit: float, i_limit: float, power
 
 
 def pulse_meas_sm(
-    instr_id: int,
-    chan: int,
-    acquire_type: int,
-    acquire_meas_v_ampl: bool,
-    acquire_meas_v_base: bool,
-    acquire_meas_i_ampl: bool,
-    acquire_meas_i_base: bool,
-    acquire_time_stamp: bool,
-    llecomp: bool,
+        instr_id: int,
+        chan: int,
+        acquire_type: int,
+        acquire_meas_v_ampl: bool,
+        acquire_meas_v_base: bool,
+        acquire_meas_i_ampl: bool,
+        acquire_meas_i_base: bool,
+        acquire_time_stamp: bool,
+        llecomp: bool,
 ):
     """Configures spot mean measurement. See lpt docu.
     Params:
@@ -675,13 +683,13 @@ def pulse_meas_timing(instr_id: int, chan: int, start_percent: float, stop_perce
 
 
 def pulse_meas_wfm(
-    instr_id: int,
-    chan: int,
-    acquire_type: bool,
-    acquire_meas_v: bool,
-    acquire_meas_i: bool,
-    acquire_time_stamp: bool,
-    llecomp: bool,
+        instr_id: int,
+        chan: int,
+        acquire_type: bool,
+        acquire_meas_v: bool,
+        acquire_meas_i: bool,
+        acquire_time_stamp: bool,
+        llecomp: bool,
 ):
     """Configures waveform measurements."""
     acquire_type = c.c_int32(acquire_type)
@@ -703,12 +711,12 @@ def pulse_meas_wfm(
 
 
 def pulse_meas_rt(
-    instr_id: int,
-    chan: int,
-    v_meas_col_name: str,
-    i_meas_col_name: str,
-    time_stamp_col_name: str,
-    status_col_name: str,
+        instr_id: int,
+        chan: int,
+        v_meas_col_name: str,
+        i_meas_col_name: str,
+        time_stamp_col_name: str,
+        status_col_name: str,
 ):
     """Configures channel to return pulse source and measure data in pseudo real time.
     As measurements are performed, the data is automatically placed in the Clarius Analyze sheet.
@@ -730,13 +738,13 @@ def pulse_meas_rt(
 
 
 def pulse_ranges(
-    instr_id: int,
-    chan: int,
-    v_src_range: float,
-    v_range_type: int,
-    v_range: float,
-    i_range_type: int,
-    i_range: float,
+        instr_id: int,
+        chan: int,
+        v_src_range: float,
+        v_range_type: int,
+        v_range: float,
+        i_range_type: int,
+        i_range: float,
 ):
     """Set the voltage pulse range and voltage/current measure ranges
     - Range types: Auto 0, Limited auto: 1, Fixed: 2
@@ -838,18 +846,18 @@ def rpm_config(instr_id: int, chan: int, modifier: int, value: int):
 
 
 def seg_arb_sequence(
-    instr_id: int,
-    chan: int,
-    seq_num: int,
-    num_segments,
-    start_v: list[float],
-    stop_v: list[float],
-    time: list[float],
-    trig: list[bool],
-    ssr: list[int],
-    meas_type: list[float],
-    meas_start: list[float],
-    meas_stop: list[float],
+        instr_id: int,
+        chan: int,
+        seq_num: int,
+        num_segments,
+        start_v: list[float],
+        stop_v: list[float],
+        time: list[float],
+        trig: list[bool],
+        ssr: list[int],
+        meas_type: list[float],
+        meas_start: list[float],
+        meas_stop: list[float],
 ):
     """Define the parameters for a segment arbitrary waveform pulse-measure sequence
     - sequence_id: unique id to identify sequence
@@ -950,6 +958,7 @@ def decode_pulse_status(status_bits: int) -> dict:
 
 
 # ### CVU
+
 def asweepv(instr_id: str, voltages: list[float], delay: float) -> None:
     """Generate a waveform based on user-defined forcing array (logarithmic sweep or other custom forcing commands)."""
     c_instr_id = c.c_int32(instr_id)
@@ -962,12 +971,12 @@ def asweepv(instr_id: str, voltages: list[float], delay: float) -> None:
 
 
 def bsweepi(
-    instr_id: str,
-    start_current: float,
-    stop_current: float,
-    number_of_points: int,
-    delay: float,
-    result: float,
+        instr_id: str,
+        start_current: float,
+        stop_current: float,
+        number_of_points: int,
+        delay: float,
+        result: float,
 ) -> None:
     """Supplies a series of ascending or descending currents and shuts down when result fits a trigger condition."""
     c_instr_id = c.c_int32(instr_id)
@@ -982,12 +991,12 @@ def bsweepi(
 
 
 def bsweepv(
-    instr_id: str,
-    start_current: float,
-    stop_current: float,
-    number_of_points: int,
-    delay: float,
-    result: float,
+        instr_id: str,
+        start_current: float,
+        stop_current: float,
+        number_of_points: int,
+        delay: float,
+        result: float,
 ) -> None:
     """Supplies a series of ascending or descending voltage and shuts down when result fits a trigger condition."""
     c_instr_id = c.c_int32(instr_id)
@@ -1210,11 +1219,11 @@ def smeasz(instr_id: int, model: int, speed: int, array_size: int) -> (list[floa
 
 
 def smeaszRT(
-    instr_id: int,
-    model: int,
-    speed: int,
-    number_of_points: int,
-    column_name: str,
+        instr_id: int,
+        model: int,
+        speed: int,
+        number_of_points: int,
+        column_name: str,
 ) -> (list[float], list[float]):
     """Perform impedance measurement in real time for a sweep."""
     c_instr_id = c.c_int32(instr_id)
