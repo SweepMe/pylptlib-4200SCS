@@ -8,6 +8,7 @@ from server import run_server
 
 # import LPT library functions
 from pylptlib import lpt
+from pylptlib import __version__ as pylptlib_version
 
 # import LPT library instrument IDs
 # from pylptlib import inst
@@ -15,6 +16,7 @@ from pylptlib import lpt
 # import LPT library parameter constants
 from pylptlib import param
 
+print(f"pylptlib Server Version {pylptlib_version}")
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
