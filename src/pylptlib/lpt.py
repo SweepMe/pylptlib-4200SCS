@@ -559,7 +559,7 @@ def pulse_conncomp(instr_id: int, chan: int, type: int, index: int):
     check_error(err)
 
 
-def pulse_exec(mode: bool) -> int:
+def pulse_exec(mode: bool) -> None:
     """Execute a pulse in basic/advanced mode."""
     err = _dll.pulse_exec(c.c_int32(mode))
     check_error(err)
@@ -572,7 +572,7 @@ def pulse_exec_status() -> tuple[int, float]:
     return int(status), float(elapsed_time.value)
 
 
-def pulse_fetch(instr_id: int, chan: int, start_index: int, stop_index: int) -> tuple[dict, float, float, float]:
+def pulse_fetch(instr_id: int, chan: int, start_index: int, stop_index: int) -> tuple[list, list, list, list]:
     """This command retrieves enabled test data and temporarily stores it in the data buffer.
 
     When using pulse_fetch to retrieve data, you need to pause the program to allow time for the
@@ -727,6 +727,32 @@ def pulse_meas_rt(
     status_meas_name = make_char_pointer(status_col_name)
 
     err = _dll.pulse_meas_rt(
+        c.c_int32(instr_id),
+        c.c_int32(chan),
+        v_meas_name,
+        i_meas_name,
+        timestamp_meas_name,
+        status_meas_name,
+    )
+    check_error(err)
+
+def pulse_measrt(
+        instr_id: int,
+        chan: int,
+        v_meas_col_name: str,
+        i_meas_col_name: str,
+        time_stamp_col_name: str,
+        status_col_name: str,
+):
+    """Configures channel to return pulse source and measure data in pseudo real time.
+    As measurements are performed, the data is automatically placed in the Clarius Analyze sheet.
+    """
+    v_meas_name = make_char_pointer(v_meas_col_name)
+    i_meas_name = make_char_pointer(i_meas_col_name)
+    timestamp_meas_name = make_char_pointer(time_stamp_col_name)
+    status_meas_name = make_char_pointer(status_col_name)
+
+    err = _dll.pulse_measrt(
         c.c_int32(instr_id),
         c.c_int32(chan),
         v_meas_name,
