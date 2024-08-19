@@ -585,7 +585,7 @@ def pulse_fetch(instr_id: int, chan: int, start_index: int, stop_index: int) -> 
 
     meas_v = make_double_array(buffer_size)
     meas_i = make_double_array(buffer_size)
-    statuses = make_generic_array(buffer_size, data_type=c.c_ulong())
+    statuses = make_generic_array(buffer_size, data_type=c.c_ulong)
     timestamp = make_double_array(buffer_size)
 
     # TODO: check whether statuses needs byref
