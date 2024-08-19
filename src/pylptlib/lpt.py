@@ -26,7 +26,7 @@ from .error_codes import ERROR_CODES
 _dll_path = r"C:\s4200\sys\bin\lptlib.dll"
 _dll = None
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 
 # ### UTILITY FUNCTIONS
