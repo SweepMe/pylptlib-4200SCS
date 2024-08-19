@@ -832,10 +832,7 @@ def pulse_sweep_linear(instr_id: int, chan: int, sweep_type: int, start: float, 
 
 def pulse_train(instr_id: int, chan: int, v_base: float, v_amplitude: float):
     """ """
-    v_base = c.c_double(v_base) if v_base else None
-    v_amplitude = c.c_double(v_amplitude) if v_amplitude else None
-
-    err = _dll.pulse_train(c.c_int32(instr_id), c.c_int32(chan))
+    err = _dll.pulse_train(c.c_int32(instr_id), c.c_int32(chan), c.c_double(v_base), c.c_double(v_amplitude))
     check_error(err)
 
 
