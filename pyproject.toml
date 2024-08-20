@@ -1,6 +1,0 @@
-
-[project]
-name = "pylptlib"
-
-[tool.pytest.ini_options]
-pythonpath = "src"

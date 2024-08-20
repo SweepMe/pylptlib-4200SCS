@@ -26,7 +26,7 @@ from .error_codes import ERROR_CODES
 _dll_path = r"C:\s4200\sys\bin\lptlib.dll"
 _dll = None
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 
 # ### UTILITY FUNCTIONS
@@ -585,7 +585,7 @@ def pulse_fetch(instr_id: int, chan: int, start_index: int, stop_index: int) -> 
 
     meas_v = make_double_array(buffer_size)
     meas_i = make_double_array(buffer_size)
-    statuses = make_generic_array(buffer_size, data_type=c.c_ulong())
+    statuses = make_generic_array(buffer_size, data_type=c.c_ulong)
     timestamp = make_double_array(buffer_size)
 
     # TODO: check whether statuses needs byref
@@ -832,10 +832,7 @@ def pulse_sweep_linear(instr_id: int, chan: int, sweep_type: int, start: float, 
 
 def pulse_train(instr_id: int, chan: int, v_base: float, v_amplitude: float):
     """ """
-    v_base = c.c_double(v_base) if v_base else None
-    v_amplitude = c.c_double(v_amplitude) if v_amplitude else None
-
-    err = _dll.pulse_train(c.c_int32(instr_id), c.c_int32(chan))
+    err = _dll.pulse_train(c.c_int32(instr_id), c.c_int32(chan), c.c_double(v_base), c.c_double(v_amplitude))
     check_error(err)
 
 
