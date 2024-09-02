@@ -967,6 +967,17 @@ def asweepv(instr_id: str, voltages: list[float], delay: float) -> None:
     check_error(err)
 
 
+def asweepi(instr_id: str, currents: list[float], delay: float) -> None:
+    """Generate a waveform based on user-defined forcing array (logarithmic sweep or other custom forcing commands)."""
+    c_instr_id = c.c_int32(instr_id)
+    c_number_of_points = c.c_long(len(currents))
+    c_currents = make_double_array_pointer(len(currents), currents)
+    c_delay = c.c_double(delay)
+
+    err = _dll.asweepi(c_instr_id, c_number_of_points, c_currents, c_delay)
+    check_error(err)
+
+
 def bsweepi(
         instr_id: str,
         start_current: float,
@@ -1199,6 +1210,17 @@ def smeasvRT(instr_id: int, array_size: int, column_name: str) -> list[float]:
     return c_voltages
 
 
+def smeasi(instr_id: int, array_size: int) -> list[float]:
+    """Allow multiple measurements by a specified instrument during asweepX command."""
+    c_instr_id = c.c_int32(instr_id)
+    c_currents = make_double_array(array_size)
+
+    err = _dll.smeasi(c_instr_id, c.byref(c_currents))
+    check_error(err)
+
+    return c_currents
+
+
 def smeasz(instr_id: int, model: int, speed: int, array_size: int) -> (list[float], list[float]):
     """Perform impedance measurements for a sweep."""
     c_instr_id = c.c_int32(instr_id)
@@ -1273,3 +1295,22 @@ def sweepv(instr_id: int, start_freq: float, stop_freq: float, number_of_points:
 
     err = _dll.sweepv(c_instr_id, c_start_freq, c_stop_freq, c_number_of_points, c_delay)
     check_error(err)
+
+
+"""Readout of result arrays when the measurement is started from a different command, e.g. when using List sweeps."""
+
+_measurements: dict = {}
+"""Dictionary to save result arrays for later readout after measurement has been finished."""
+
+
+def prepare_measurement(function: callable, key: str, *args, **kwargs):
+    """Call a measurement function, but save the array reference to read out the data later."""
+    result = function(*args, **kwargs)
+    # save the array reference in a global dictionary
+    _measurements[key] = result
+    return result
+
+
+def read_measurement(key: str):
+    """Read out the data from a previous measurement."""
+    return _measurements[key]
