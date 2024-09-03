@@ -23,7 +23,18 @@ import ctypes as c
 
 from .error_codes import ERROR_CODES
 
-_dll_path = r"C:\s4200\sys\bin\lptlib.dll"
+# Check if lptlib.dll exists in current directory
+import os
+current_directory = os.getcwd()
+
+custom_dll_path = os.path.join(current_directory, "lptlib.dll")
+if os.path.exists(custom_dll_path):
+    print("Using custom lptlib.dll")
+    _dll_path = custom_dll_path
+else:
+    print("Using default lptlib.dll")
+    _dll_path = r"C:\s4200\sys\bin\lptlib.dll"
+
 _dll = None
 
 DEBUG_MODE = False
