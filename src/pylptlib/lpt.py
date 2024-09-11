@@ -28,7 +28,12 @@ import os
 current_directory = os.getcwd()
 
 custom_dll_path = os.path.join(current_directory, "lptlib.dll")
-if os.path.exists(custom_dll_path):
+bin_dll_path = os.path.join(current_directory, "bin", "lptlib.dll")
+if os.path.exists(bin_dll_path):
+    print("Using custom lptlib.dll from bin directory")
+    _dll_path = bin_dll_path
+elif os.path.exists(custom_dll_path):
+    # TODO: Remove print statements
     print("Using custom lptlib.dll")
     _dll_path = custom_dll_path
 else:
@@ -120,6 +125,9 @@ def check_error(error_code: c.c_int32, *args):
 
     if DEBUG_MODE:
         print("error message: ", error_string)
+
+    if DEBUG_MODE and args:
+        print("Error arguments: ", args)
 
     place_holders = error_string.count("%")
     if len(args) == place_holders:
@@ -1000,7 +1008,7 @@ def asweepv(instr_id: str, voltages: list[float], delay: float) -> None:
     c_voltages = make_double_array_pointer(len(voltages), voltages)
     c_delay = c.c_double(delay)
 
-    err = _dll.asweepv(c_instr_id, c_number_of_points, c_voltages, c_delay)
+    err = _dll.asweepv(c_instr_id, c_number_of_points, c_delay, c_voltages)
     check_error(err)
 
 
@@ -1011,7 +1019,15 @@ def asweepi(instr_id: str, currents: list[float], delay: float) -> None:
     c_currents = make_double_array_pointer(len(currents), currents)
     c_delay = c.c_double(delay)
 
-    err = _dll.asweepi(c_instr_id, c_number_of_points, c_currents, c_delay)
+    err = _dll.asweepi(c_instr_id, c_number_of_points, c_delay, c_currents)
+    check_error(err)
+
+
+def adelay(delays: list[float]) -> None:
+    """Specifies an array of delay points to use with asweepX command calls."""
+    c_number_of_points = c.c_long(len(delays))
+    c_delays = make_double_array_pointer(len(delays), delays)
+    err = _dll.adelay(c_number_of_points, c_delays);
     check_error(err)
 
 
@@ -1071,7 +1087,7 @@ def cvu_custom_cable_comp(instr_id: str):
 
 def devclr() -> None:
     """Set all sources to a zero state."""
-    err = _dll.devlr()
+    err = _dll.devclr()
     check_error(err)
 
 
@@ -1340,8 +1356,14 @@ _measurements: dict = {}
 """Dictionary to save result arrays for later readout after measurement has been finished."""
 
 
-def prepare_measurement(function: callable, key: str, *args, **kwargs):
+def reset_measurement_dict():
+    """Reset the _measurements dictionary for a new set of data."""
+    _measurements.clear()
+
+
+def prepare_measurement(function_name: str, key: str, *args, **kwargs):
     """Call a measurement function, but save the array reference to read out the data later."""
+    function = globals().get(function_name)
     result = function(*args, **kwargs)
     # save the array reference in a global dictionary
     _measurements[key] = result
@@ -1350,4 +1372,8 @@ def prepare_measurement(function: callable, key: str, *args, **kwargs):
 
 def read_measurement(key: str):
     """Read out the data from a previous measurement."""
-    return _measurements[key]
+    result = _measurements[key]
+    if isinstance(result, c.Array):
+        pointer = c.cast(result, c.POINTER(c.c_double))
+        result = [pointer[i] for i in range(len(result))]
+    return result
