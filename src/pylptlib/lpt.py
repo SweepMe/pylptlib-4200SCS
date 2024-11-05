@@ -23,21 +23,17 @@ import ctypes as c
 
 from .error_codes import ERROR_CODES
 
-# Check if lptlib.dll exists in current directory
+# Currently, the lptlib.dll can only be loaded if it is installed in the standard Clarius installation path.
+# The following code checks if the lptlib.dll has been copied into the same folder as the server.exe.
+# It is not 100% clear if this is the best way to handle this, but it works for now.
 import os
 current_directory = os.getcwd()
 
 custom_dll_path = os.path.join(current_directory, "lptlib.dll")
-bin_dll_path = os.path.join(current_directory, "bin", "lptlib.dll")
-if os.path.exists(bin_dll_path):
-    print("Using custom lptlib.dll from bin directory")
-    _dll_path = bin_dll_path
-elif os.path.exists(custom_dll_path):
-    # TODO: Remove print statements
-    print("Using custom lptlib.dll")
+
+if os.path.exists(custom_dll_path):
     _dll_path = custom_dll_path
 else:
-    print("Using default lptlib.dll")
     _dll_path = r"C:\s4200\sys\bin\lptlib.dll"
 
 _dll = None
@@ -181,6 +177,15 @@ def rdelay(delay: float) -> None:
     """Set a user-programmable delay."""
     c_delay = c.c_double(delay)
     err = _dll.rdelay(c_delay)
+    check_error(err)
+
+
+def conpin(instr_term_id: int, connect: int) -> None:
+    """Connect the specified instrument to the specified pin(s) on the device.
+
+    connect_n parameter not implemented yet.
+    """
+    err = _dll.conpin(c.c_int32(instr_term_id), c.c_int32(connect), 0)
     check_error(err)
 
 
