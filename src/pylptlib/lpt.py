@@ -23,8 +23,8 @@ import ctypes as c
 
 from .error_codes import ERROR_CODES
 
-# Currently, the lptlib.dll can only be loaded if it is installed in the standard Clarius installation path.
-# The following code checks if the lptlib.dll has been copied into the same folder as the server.exe.
+# By standard the lptlib.dll is imported from the default Clarius installation path at C:\s4200\sys\bin\lptlib.dll
+# Alternatively, the lptlib.dll can be copied to the working directory of this script or the directory of the server.exe
 # It is not 100% clear if this is the best way to handle this, but it works for now.
 import os
 current_directory = os.getcwd()
@@ -1355,7 +1355,9 @@ def sweepv(instr_id: int, start_freq: float, stop_freq: float, number_of_points:
     check_error(err)
 
 
-"""Readout of result arrays when the measurement is started from a different command, e.g. when using List sweeps."""
+# Some measurement modes do not return the measurement data directly: e.g. list sweeps, where the measurement tables are
+# defined for each channel by using smeasX commands and the actual measurement is started by a sweepX command. In this
+# case, the following functions can be used to save the result arrays in a global dictionary and read them out later.
 
 _measurements: dict = {}
 """Dictionary to save result arrays for later readout after measurement has been finished."""
