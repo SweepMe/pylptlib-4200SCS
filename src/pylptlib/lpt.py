@@ -23,7 +23,19 @@ import ctypes as c
 
 from .error_codes import ERROR_CODES
 
-_dll_path = r"C:\s4200\sys\bin\lptlib.dll"
+# By standard the lptlib.dll is imported from the default Clarius installation path at C:\s4200\sys\bin\lptlib.dll
+# Alternatively, the lptlib.dll can be copied to the working directory of this script or the directory of the server.exe
+# It is not 100% clear if this is the best way to handle this, but it works for now.
+import os
+current_directory = os.getcwd()
+
+custom_dll_path = os.path.join(current_directory, "lptlib.dll")
+
+if os.path.exists(custom_dll_path):
+    _dll_path = custom_dll_path
+else:
+    _dll_path = r"C:\s4200\sys\bin\lptlib.dll"
+
 _dll = None
 
 DEBUG_MODE = False
@@ -110,6 +122,9 @@ def check_error(error_code: c.c_int32, *args):
     if DEBUG_MODE:
         print("error message: ", error_string)
 
+    if DEBUG_MODE and args:
+        print("Error arguments: ", args)
+
     place_holders = error_string.count("%")
     if len(args) == place_holders:
         raise K4200Error(error_string % args)
@@ -162,6 +177,15 @@ def rdelay(delay: float) -> None:
     """Set a user-programmable delay."""
     c_delay = c.c_double(delay)
     err = _dll.rdelay(c_delay)
+    check_error(err)
+
+
+def conpin(instr_term_id: int, connect: int) -> None:
+    """Connect the specified instrument to the specified pin(s) on the device.
+
+    connect_n parameter not implemented yet.
+    """
+    err = _dll.conpin(c.c_int32(instr_term_id), c.c_int32(connect), 0)
     check_error(err)
 
 
@@ -559,7 +583,7 @@ def pulse_conncomp(instr_id: int, chan: int, type: int, index: int):
     check_error(err)
 
 
-def pulse_exec(mode: bool) -> int:
+def pulse_exec(mode: bool) -> None:
     """Execute a pulse in basic/advanced mode."""
     err = _dll.pulse_exec(c.c_int32(mode))
     check_error(err)
@@ -572,7 +596,7 @@ def pulse_exec_status() -> tuple[int, float]:
     return int(status), float(elapsed_time.value)
 
 
-def pulse_fetch(instr_id: int, chan: int, start_index: int, stop_index: int) -> tuple[dict, float, float, float]:
+def pulse_fetch(instr_id: int, chan: int, start_index: int, stop_index: int) -> tuple[list, list, list, list]:
     """This command retrieves enabled test data and temporarily stores it in the data buffer.
 
     When using pulse_fetch to retrieve data, you need to pause the program to allow time for the
@@ -727,6 +751,32 @@ def pulse_meas_rt(
     status_meas_name = make_char_pointer(status_col_name)
 
     err = _dll.pulse_meas_rt(
+        c.c_int32(instr_id),
+        c.c_int32(chan),
+        v_meas_name,
+        i_meas_name,
+        timestamp_meas_name,
+        status_meas_name,
+    )
+    check_error(err)
+
+def pulse_measrt(
+        instr_id: int,
+        chan: int,
+        v_meas_col_name: str,
+        i_meas_col_name: str,
+        time_stamp_col_name: str,
+        status_col_name: str,
+):
+    """Configures channel to return pulse source and measure data in pseudo real time.
+    As measurements are performed, the data is automatically placed in the Clarius Analyze sheet.
+    """
+    v_meas_name = make_char_pointer(v_meas_col_name)
+    i_meas_name = make_char_pointer(i_meas_col_name)
+    timestamp_meas_name = make_char_pointer(time_stamp_col_name)
+    status_meas_name = make_char_pointer(status_col_name)
+
+    err = _dll.pulse_measrt(
         c.c_int32(instr_id),
         c.c_int32(chan),
         v_meas_name,
@@ -963,7 +1013,26 @@ def asweepv(instr_id: str, voltages: list[float], delay: float) -> None:
     c_voltages = make_double_array_pointer(len(voltages), voltages)
     c_delay = c.c_double(delay)
 
-    err = _dll.asweepv(c_instr_id, c_number_of_points, c_voltages, c_delay)
+    err = _dll.asweepv(c_instr_id, c_number_of_points, c_delay, c_voltages)
+    check_error(err)
+
+
+def asweepi(instr_id: str, currents: list[float], delay: float) -> None:
+    """Generate a waveform based on user-defined forcing array (logarithmic sweep or other custom forcing commands)."""
+    c_instr_id = c.c_int32(instr_id)
+    c_number_of_points = c.c_long(len(currents))
+    c_currents = make_double_array_pointer(len(currents), currents)
+    c_delay = c.c_double(delay)
+
+    err = _dll.asweepi(c_instr_id, c_number_of_points, c_delay, c_currents)
+    check_error(err)
+
+
+def adelay(delays: list[float]) -> None:
+    """Specifies an array of delay points to use with asweepX command calls."""
+    c_number_of_points = c.c_long(len(delays))
+    c_delays = make_double_array_pointer(len(delays), delays)
+    err = _dll.adelay(c_number_of_points, c_delays);
     check_error(err)
 
 
@@ -1023,7 +1092,7 @@ def cvu_custom_cable_comp(instr_id: str):
 
 def devclr() -> None:
     """Set all sources to a zero state."""
-    err = _dll.devlr()
+    err = _dll.devclr()
     check_error(err)
 
 
@@ -1199,6 +1268,17 @@ def smeasvRT(instr_id: int, array_size: int, column_name: str) -> list[float]:
     return c_voltages
 
 
+def smeasi(instr_id: int, array_size: int) -> list[float]:
+    """Allow multiple measurements by a specified instrument during asweepX command."""
+    c_instr_id = c.c_int32(instr_id)
+    c_currents = make_double_array(array_size)
+
+    err = _dll.smeasi(c_instr_id, c.byref(c_currents))
+    check_error(err)
+
+    return c_currents
+
+
 def smeasz(instr_id: int, model: int, speed: int, array_size: int) -> (list[float], list[float]):
     """Perform impedance measurements for a sweep."""
     c_instr_id = c.c_int32(instr_id)
@@ -1273,3 +1353,34 @@ def sweepv(instr_id: int, start_freq: float, stop_freq: float, number_of_points:
 
     err = _dll.sweepv(c_instr_id, c_start_freq, c_stop_freq, c_number_of_points, c_delay)
     check_error(err)
+
+
+# Some measurement modes do not return the measurement data directly: e.g. list sweeps, where the measurement tables are
+# defined for each channel by using smeasX commands and the actual measurement is started by a sweepX command. In this
+# case, the following functions can be used to save the result arrays in a global dictionary and read them out later.
+
+_measurements: dict = {}
+"""Dictionary to save result arrays for later readout after measurement has been finished."""
+
+
+def reset_measurement_dict():
+    """Reset the _measurements dictionary for a new set of data."""
+    _measurements.clear()
+
+
+def prepare_measurement(function_name: str, key: str, *args, **kwargs):
+    """Call a measurement function, but save the array reference to read out the data later."""
+    function = globals().get(function_name)
+    result = function(*args, **kwargs)
+    # save the array reference in a global dictionary
+    _measurements[key] = result
+    return result
+
+
+def read_measurement(key: str):
+    """Read out the data from a previous measurement."""
+    result = _measurements[key]
+    if isinstance(result, c.Array):
+        pointer = c.cast(result, c.POINTER(c.c_double))
+        result = [pointer[i] for i in range(len(result))]
+    return result
