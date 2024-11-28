@@ -141,21 +141,27 @@ def initialize():
 # ### GENERAL FUNCTIONS
 
 
-def tstsel(id_: int):
+def tstsel(id_: int) -> None:
     """Select test station."""
     err = _dll.tstsel(c.c_int32(id_))  # equiv to c_long
     check_error(err)
 
 
-def tstdsl():
+def tstdsl() -> None:
     """Deselect test station."""
     err = _dll.tstdsl()
     check_error(err)
 
 
-def devint():
+def devint() -> None:
     """Reset all active instruments in the system to their default states."""
     err = _dll.devint()
+    check_error(err)
+
+
+def clrscn() -> None:
+    """This command clears the measurement scan tables associated with a sweep."""
+    err = _dll.clrscn()
     check_error(err)
 
 
@@ -1363,9 +1369,12 @@ _measurements: dict = {}
 """Dictionary to save result arrays for later readout after measurement has been finished."""
 
 
-def reset_measurement_dict():
+def reset_measurement_cache():
     """Reset the _measurements dictionary for a new set of data."""
     _measurements.clear()
+
+    # Clear the measurement tables of the device
+    clrscn()
 
 
 def prepare_measurement(function_name: str, key: str, *args, **kwargs):
