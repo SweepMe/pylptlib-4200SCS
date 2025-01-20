@@ -10,6 +10,10 @@ pylptlib is a backend for the [SweepMe!](https://sweep-me.net) instrument driver
 
 The implementation is based on the documentation "4200A-LPT-907-01A_LPT_Dec_2020.pdf"
 
+### Use with SweepMe!
+
+An extensive step-by-step manual for using the lptlib with SweepMe! can be found in the \manual directory.
+
 ## Install
 The package can be installed using "pip install 'path_to_package'".
 Further, you need to install a 32 bit Python on the parameter analyzer 
