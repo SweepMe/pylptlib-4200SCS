@@ -1038,7 +1038,7 @@ def adelay(delays: list[float]) -> None:
     """Specifies an array of delay points to use with asweepX command calls."""
     c_number_of_points = c.c_long(len(delays))
     c_delays = make_double_array_pointer(len(delays), delays)
-    err = _dll.adelay(c_number_of_points, c_delays);
+    err = _dll.adelay(c_number_of_points, c_delays)
     check_error(err)
 
 
@@ -1388,6 +1388,9 @@ def prepare_measurement(function_name: str, key: str, *args, **kwargs):
 
 def read_measurement(key: str):
     """Read out the data from a previous measurement."""
+    if key not in _measurements:
+        return None
+
     result = _measurements[key]
     if isinstance(result, c.Array):
         pointer = c.cast(result, c.POINTER(c.c_double))
