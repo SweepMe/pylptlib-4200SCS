@@ -106,9 +106,11 @@ def set_library_path(path):
 
 
 def check_error(error_code: c.c_int32, *args):
-    """Get the error codes if there was an error
-    There is some unclear Keithley magic with filling the place holders available for some
-    error codes.
+    """Raise a K4200Error if the LPT library reported an error.
+
+    Values that caused the error can be handed over via *args and are substituted into the placeholders of the
+    Keithley error string. The number of placeholders varies per error code and some of them refer to values that
+    are only known inside the LPT library, so the substitution is best-effort.
     """
     error_code = int(error_code)
     if error_code == 0:
@@ -117,7 +119,7 @@ def check_error(error_code: c.c_int32, *args):
     if DEBUG_MODE:
         print("error #: ", error_code)
 
-    error_string = ERROR_CODES[error_code]
+    error_string = ERROR_CODES.get(error_code, "Unknown error code, not listed in error_codes.py.")
 
     if DEBUG_MODE:
         print("error message: ", error_string)
@@ -125,11 +127,16 @@ def check_error(error_code: c.c_int32, *args):
     if DEBUG_MODE and args:
         print("Error arguments: ", args)
 
-    place_holders = error_string.count("%")
-    if len(args) == place_holders:
-        raise K4200Error(error_string % args)
-    else:
-        raise K4200Error(error_string)
+    try:
+        message = error_string % args
+    except (TypeError, ValueError):
+        # The error string expects a different number or type of placeholders than the values handed over.
+        # Keep the raw string but do not silently drop the values.
+        message = error_string
+        if args:
+            message += " Given values: " + ", ".join(repr(arg) for arg in args)
+
+    raise K4200Error(f"Error {error_code}: {message}")
 
 
 def initialize():
@@ -201,13 +208,13 @@ def conpin(instr_term_id: int, connect: int) -> None:
 def forcev(instr_id: int, value: float):
     """Program a sourcing instrument to generate a voltage at a specific level."""
     err = _dll.forcev(c.c_int32(instr_id), c.c_double(value))
-    check_error(err)
+    check_error(err, value)
 
 
 def forcei(instr_id: int, value: float):
     """Program a sourcing instrument to generate a current at a specific level."""
     err = _dll.forcei(c.c_int32(instr_id), c.c_double(value))
-    check_error(err)
+    check_error(err, value)
 
 
 def intgv(instr_id: int) -> float:
@@ -229,13 +236,13 @@ def intgi(instr_id: int) -> float:
 def limitv(instr_id: int, limit_val: float):
     """Set current limit."""
     err = _dll.limitv(c.c_int32(instr_id), c.c_double(limit_val))
-    check_error(err)
+    check_error(err, limit_val)
 
 
 def limiti(instr_id: int, limit_val: float):
     """Set voltage limit."""
     err = _dll.limiti(c.c_int32(instr_id), c.c_double(limit_val))
-    check_error(err)
+    check_error(err, limit_val)
 
 
 def lorangev(instr_id: int, range: float):
@@ -243,7 +250,7 @@ def lorangev(instr_id: int, range: float):
     # Argument 'range' shadows the built-in function 'range' which is ok
     # here as no further processing is done within the local scope of the function
     err = _dll.lorangev(c.c_int32(instr_id), c.c_double(range))
-    check_error(err)
+    check_error(err, range)
 
 
 def lorangei(instr_id: int, range: float):
@@ -251,7 +258,7 @@ def lorangei(instr_id: int, range: float):
     # Argument 'range' shadows the built-in function 'range' which is ok
     # here as no further processing is done within the local scope of the function
     err = _dll.lorangei(c.c_int32(instr_id), c.c_double(range))
-    check_error(err)
+    check_error(err, range)
 
 
 def measi(instr_id: int):
@@ -283,7 +290,7 @@ def rangev(instr_id: int, range: float):
     # Argument 'range' shadows the built-in function 'range' which is ok
     # here as no further processing is done within the local scope of the function
     err = _dll.rangev(c.c_int32(instr_id), c.c_double(range))
-    check_error(err)
+    check_error(err, range)
 
 
 def rangei(instr_id: int, range: float):
@@ -291,7 +298,7 @@ def rangei(instr_id: int, range: float):
     # Argument 'range' shadows the built-in function 'range' which is ok
     # here as no further processing is done within the local scope of the function
     err = _dll.rangei(c.c_int32(instr_id), c.c_double(range))
-    check_error(err)
+    check_error(err, range)
 
 
 def setauto(instr_id: int):
